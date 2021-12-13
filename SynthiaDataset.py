@@ -26,6 +26,8 @@ class SynthiaDataset(Dataset):
     def __getitem__(self, index):
         """Get sample from dataset"""
         # read data
+        # NOTE: using opencv image reader
+        # TODO: should be converted to PIL image?
         image = cv2.imread(str(self.left_imgs[index]))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask = cv2.imread(str(self.left_gts[index]))
