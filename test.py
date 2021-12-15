@@ -21,7 +21,7 @@ DEVICE = "cuda"
 
 # load best saved checkpoint
 #best_model = torch.load('./best_model_fpn.pth')
-best_model = torch.load('./best_model_deeplab.pth')
+best_model = torch.load('./car_deeplab_efficientb3.pth')
 preprocessing_fn = smp.encoders.get_preprocessing_fn(ENCODER, ENCODER_WEIGHTS)
 
 # create test dataset
