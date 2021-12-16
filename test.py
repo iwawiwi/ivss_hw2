@@ -8,7 +8,7 @@ import segmentation_models_pytorch as smp
 
 DATA_DIR = "../../Dataset/SYNTHIA-SF/"
 #ENCODER = "se_resnext50_32x4d"
-ENCODER = "resnet34"
+ENCODER = "mobilenet_v2"
 ENCODER_WEIGHTS = "imagenet"
 #CLASSES = ["car"]
 CLASSES = [
@@ -21,16 +21,16 @@ DEVICE = "cuda"
 
 # load best saved checkpoint
 #best_model = torch.load('./best_model_fpn.pth')
-best_model = torch.load('./car_deeplab_efficientb3.pth')
+best_model = torch.load('./car_deeplab_mobilenetv2.pth')
 preprocessing_fn = smp.encoders.get_preprocessing_fn(ENCODER, ENCODER_WEIGHTS)
 
-# create test dataset
+# create test dataset using full Synthia dataset
 test_dataset = SynthiaDataset(
     augmentation=augment.get_validation_augmentation(), 
     preprocessing=augment.get_preprocessing(preprocessing_fn),
     classes=CLASSES,
 )
-
+# validation metrics
 test_dataloader = DataLoader(test_dataset)
 
 # test dataset without transformations for image visualization

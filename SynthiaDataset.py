@@ -18,6 +18,8 @@ class SynthiaDataset(Dataset):
         self.left_imgs, self.left_gts = self.prepare_data(path) 
     
         # convert str names to class values on masks
+        if classes == None:
+            classes = self.CLASSES # if no value, assign all classes
         self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
         
         self.augmentation = augmentation
