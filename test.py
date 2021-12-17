@@ -1,6 +1,7 @@
 import torch
 import augment
 import utils
+from utils import Labels
 import numpy as np
 from SynthiaDataset import SynthiaDataset
 from torch.utils.data import DataLoader
@@ -33,6 +34,21 @@ test_dataset = SynthiaDataset(
 # validation metrics
 test_dataloader = DataLoader(test_dataset)
 
+loss = smp.utils.losses.DiceLoss()
+metrics = [
+    smp.utils.metrics.IoU(threshold=0.7),
+]
+
+# evaluate model on all images in the dataset
+test_epoch = smp.utils.train.ValidEpoch(
+    model=best_model,
+    loss=loss,
+    metrics=metrics,
+    device=DEVICE,
+)
+
+logs = test_epoch.run(test_dataloader)
+
 # test dataset without transformations for image visualization
 test_dataset_vis = SynthiaDataset( 
     classes=CLASSES,
@@ -45,13 +61,20 @@ for i in range(5):
     image, gt_mask = test_dataset[n]
     
     gt_mask = gt_mask.squeeze()
+    gt_mask_max = gt_mask.argmax(0)
+    gt_mask_color = Labels.colorize(gt_mask_max)
     
     x_tensor = torch.from_numpy(image).to(DEVICE).unsqueeze(0)
     pr_mask = best_model.predict(x_tensor)
-    pr_mask = (pr_mask.squeeze().cpu().numpy().round())
+    #pr_mask = (pr_mask.squeeze().cpu().numpy().round())
+    pr_mask = pr_mask.squeeze().cpu().numpy()
+
+    pr_mask_max = pr_mask.argmax(0)
+    pr_mask_color = Labels.colorize(pr_mask_max)
+
         
     utils.visualize(
         image=image_vis, 
-        ground_truth_mask=gt_mask, 
-        predicted_mask=pr_mask
+        ground_truth_mask=gt_mask_color, 
+        predicted_mask=pr_mask_color
     )
