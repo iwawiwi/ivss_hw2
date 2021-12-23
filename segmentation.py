@@ -17,7 +17,7 @@ def train(train_epoch, valid_epoch):
     max_score = 0
     min_loss = np.inf
     #EPOCHS = 40
-    EPOCHS = 20
+    EPOCHS = 40
     for i in range(0, EPOCHS):
         
         print('\nEpoch: {}'.format(i))
@@ -36,30 +36,37 @@ def train(train_epoch, valid_epoch):
             max_score = valid_logs['iou_score']
             #torch.save(model, './best_model_fpn.pth')
             torch.save(model, MODEL_NAME)
-            print('Model saved!')
+            print('Best validataion model saved!')
         
         # save model with lowest training loss
         if min_loss > train_logs["dice_loss"]:
             min_loss = train_logs["dice_loss"]
-            torch.save(model, MODEL_NAME+"_") # add suffix _ to the model
+            torch.save(model, "_"+MODEL_NAME) # add prefix _ to the model
+            print('Lowest loss training model saved!')
             
         #if i == 25:
         if i == 10:
+            optimizer.param_groups[0]['lr'] = 1e-4
+            print('Decrease decoder learning rate to 1e-4!')
+        elif i == 20:
             optimizer.param_groups[0]['lr'] = 1e-5
             print('Decrease decoder learning rate to 1e-5!')
-
+        elif i == 30:
+            optimizer.param_groups[0]['lr'] = 1e-6
+            print('Decrease decoder learning rate to 1e-6!')
+            
     writer.close()
 
 # Must for specifying number of worker
 if __name__ == "__main__":
     # running scenario
-    WRITER_NAME = "runs/deeplab_5"
+    WRITER_NAME = "runs/deeplab_"
     writer = SummaryWriter(WRITER_NAME)
 
     DATA_DIR = "../../Dataset/SYNTHIA-SF/"
     #ENCODER = "se_resnext50_32x4d"
     #ENCODER = "resnet34"
-    ENCODER = "efficientnet-b2" # see performance here: https://pytorch.org/vision/stable/models.html
+    ENCODER = "mobilenet_v2" # see performance here: https://pytorch.org/vision/stable/models.html
     ENCODER_WEIGHTS = "imagenet"
     #CLASSES = ["car"]
     CLASSES = [
@@ -70,7 +77,7 @@ if __name__ == "__main__":
     #ACTIVATION = "sigmoid" # could be None for logits or 'softmax2d' for multiclass segmentation
     ACTIVATION = "softmax2d"
     DEVICE = "cuda"
-    MODEL_NAME = "./all_deeplab_efficientnetb2_iou7.pth"
+    MODEL_NAME = "all_deeplab_mobilenet.pth"
 
     # create segmentation model with pretrained encoder
     # model = smp.FPN(
@@ -95,14 +102,14 @@ if __name__ == "__main__":
         classes=CLASSES,
     )
 
-    # TODO: split dataset 70% for training data
-    train_size = int(0.7*len(full_dataset))
+    # TODO: split dataset 80% for training data
+    train_size = int(0.8*len(full_dataset))
     valid_size = len(full_dataset) - train_size
     train_dataset, valid_dataset = torch.utils.data.random_split(full_dataset, [train_size,valid_size], 
         generator=torch.Generator().manual_seed(1989))
 
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=2) # num worker = batch size / 2
-    valid_loader = DataLoader(valid_dataset, batch_size=2, shuffle=False, num_workers=2)
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=4) # num worker = batch size / 2
+    valid_loader = DataLoader(valid_dataset, batch_size=4, shuffle=False, num_workers=2)
 
     # Dice/F1 score - https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
     # IoU/Jaccard score - https://en.wikipedia.org/wiki/Jaccard_index
@@ -112,7 +119,7 @@ if __name__ == "__main__":
     ]
 
     optimizer = torch.optim.Adam([ 
-        dict(params=model.parameters(), lr=0.0001), # 10^-3 common...decrease by factor of 10 after 10 epoch
+        dict(params=model.parameters(), lr=0.001), # 10^-3 common...decrease by factor of 10 after 10 epoch
     ])
 
     # inspect model using tensorboard

@@ -1,8 +1,11 @@
+import os
 import numpy as np
 import cv2
-from PIL import Image
-from pathlib import Path
+import matplotlib.pyplot as plt
+
+from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+from pathlib import Path
 
 class SynthiaDataset(Dataset):
 
@@ -12,10 +15,12 @@ class SynthiaDataset(Dataset):
         "bus", "train", "motorcycle", "bicycle", "road lines", "other", "road works"
     ]
     
-    def __init__(self, path="../../Dataset/SYNTHIA-SF", classes=None, augmentation=None, preprocessing=None,):
+    def __init__(self, path="../../Dataset/SYNTHIA-SF/", classes=None, augmentation=None, preprocessing=None, test=False):
         self.rootdir = Path(path)
         # get list of file
-        self.left_imgs, self.left_gts = self.prepare_data(path) 
+        self.data_imgs, self.data_gts = self.prepare_data(test,path)
+        self.test = test
+
     
         # convert str names to class values on masks
         if classes == None:
@@ -30,10 +35,13 @@ class SynthiaDataset(Dataset):
         # read data
         # NOTE: using opencv image reader
         # TODO: should be converted to PIL image?
-        image = cv2.imread(str(self.left_imgs[index]))
+        image = cv2.imread(str(self.data_imgs[index]))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        mask = cv2.imread(str(self.left_gts[index]))
+        mask = cv2.imread(str(self.data_gts[index]))
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB)
+        if self.test == False:
+            image = cv2.resize(image,(864,480),interpolation = cv2.INTER_AREA)
+            mask = cv2.resize(mask,(864,480),interpolation = cv2.INTER_AREA)
         mask = mask[...,0] # Label on RED channel
         
         # extract certain classes from mask (e.g. cars)
@@ -54,11 +62,15 @@ class SynthiaDataset(Dataset):
         
     def __len__(self):
         """Return dataset size"""
-        return len(self.left_imgs)
+        return len(self.data_imgs)
 
-    def prepare_data(self, path):
-        """Return list of all images in dataset"""
-        left_imgs = list(self.rootdir.glob("*/RGBLeft/*.png"))
-        left_gts = list(self.rootdir.glob("*/GTLeft/*.png"))
+    def prepare_data(self, test, path):
+        if test == False:
+            data_imgs = list(self.rootdir.glob("*/RGBLeft/*.png"))
+            data_gts = list(self.rootdir.glob("*/GTLeft/*.png"))
         
-        return left_imgs, left_gts
+        else :
+            data_imgs = list(self.rootdir.glob("*/RGBRight/*.png"))
+            data_gts = list(self.rootdir.glob("*/GTright/*.png"))
+
+        return data_imgs, data_gts
